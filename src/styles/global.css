@@ -31,4 +31,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 ::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 4px; }
 
 /* iOS safe area support */
-#root { min-height: 100svh; }
+#root { 
+  min-height: 100svh;
+  padding-top: env(safe-area-inset-top);
+}

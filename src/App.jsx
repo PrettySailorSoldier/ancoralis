@@ -256,7 +256,7 @@ const s = {
   },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '18px 20px 10px', borderBottom: '1px solid #1e1e2e'
+    padding: 'calc(18px + env(safe-area-inset-top, 0px)) 20px 10px', borderBottom: '1px solid #1e1e2e'
   },
   wordmark: { display: 'flex', alignItems: 'center', gap: 8 },
   logo: { fontSize: 22, color: '#7c3aed' },
