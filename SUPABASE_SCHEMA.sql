@@ -10,6 +10,7 @@ create table if not exists anchors (
   label       text not null,           -- e.g. "Morning", "Afternoon", "Wind down"
   time        text not null,           -- HH:MM 24hr
   color       text default '#a78bfa',  -- per-anchor color
+  note        text,                    -- biological rationale / description
   active      boolean default true,
   created_at  timestamptz default now()
 );

@@ -4,7 +4,7 @@ import Shelf from './components/Shelf'
 import AnchorEditor from './components/AnchorEditor'
 import KinetoraModal from './components/KinetoraModal'
 import { useCheckin } from './hooks/useCheckin'
-import { getShelfItems, saveSettings } from './lib/supabase'
+import { getShelfItems, saveSettings, seedDefaultAnchors } from './lib/supabase'
 
 const TABS = ['today', 'anchors', 'log']
 
@@ -28,6 +28,11 @@ export default function App() {
   }
 
   useEffect(() => { loadShelf() }, [])
+
+  // Seed biological anchors on first use
+  useEffect(() => {
+    seedDefaultAnchors().then(() => refreshAnchors()).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notification permission prompt
   const requestNotifs = async () => {

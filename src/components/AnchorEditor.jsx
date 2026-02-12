@@ -59,7 +59,10 @@ function AnchorRow({ anchor, onDelete, onUpdate }) {
   return (
     <div style={s.row} onClick={() => setEditing(true)}>
       <div style={{ ...s.dot, background: anchor.color, boxShadow: `0 0 6px ${anchor.color}88` }} />
-      <span style={s.rowLabel}>{anchor.label}</span>
+      <div style={s.rowContent}>
+        <span style={s.rowLabel}>{anchor.label}</span>
+        {anchor.note && <span style={s.rowNote}>{anchor.note}</span>}
+      </div>
       <span style={s.rowTime}>{formatTime(anchor.time)}</span>
       <span style={s.editHint}>tap to edit</span>
     </div>
@@ -182,6 +185,8 @@ const s = {
   },
   dot: { width: 12, height: 12, borderRadius: '50%', flexShrink: 0 },
   rowLabel: { flex: 1, fontSize: 14, color: '#c4c4dc' },
+  rowNote: { fontSize: 11, color: '#4c4c6d', fontStyle: 'italic' },
+  rowContent: { flex: 1, display: 'flex', flexDirection: 'column', gap: 2 },
   rowTime: { fontSize: 12, color: '#7c7a96' },
   editHint: { fontSize: 10, color: '#2a2a3e' },
   rowEdit: {

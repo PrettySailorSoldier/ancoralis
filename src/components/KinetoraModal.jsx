@@ -16,6 +16,15 @@ const formatTime = (hhmm) => {
   return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`
 }
 
+const REDIRECT_PROMPTS = {
+  Peak:   "What's the one cognitive thing that matters most right now?",
+  Midday: "What's been sitting undone that takes under 10 minutes?",
+  Move:   "Has your body moved today? Even 5 minutes counts.",
+  Wind:   "What's one thing you can close before tomorrow?",
+  Dark:   "What does tomorrow-you need to know right now?",
+}
+const getRedirectPrompt = (label) => REDIRECT_PROMPTS[label] || 'One small thing. Start there.'
+
 export default function KinetoraModal({ currentAnchor, nextAnchor, onClose }) {
   const [note, setNote] = useState('')
   const [phase, setPhase] = useState('question') // 'question' | 'redirect'
@@ -38,9 +47,9 @@ export default function KinetoraModal({ currentAnchor, nextAnchor, onClose }) {
           <p style={s.redirect}>
             {nextAnchor
               ? <>Next: <span style={{ color: nextAnchor.color, fontWeight: 700 }}>{nextAnchor.label}</span> at {formatTime(nextAnchor.time)}</>
-              : 'The day is open. One small thing.'}
+              : 'The day is open.'}
           </p>
-          <p style={s.subtext}>Take a breath. Pick one thing. Start there.</p>
+          <p style={s.promptLine}>{getRedirectPrompt(currentAnchor?.label)}</p>
           <button style={s.okBtn} onClick={onClose}>ok</button>
         </div>
       </div>
@@ -105,6 +114,7 @@ const s = {
   contextLine: { fontSize: 13, color: '#7c7a96', marginBottom: 8 },
   question: { fontSize: 16, color: '#c4c4dc', marginBottom: 16, lineHeight: 1.4 },
   redirect: { fontSize: 16, color: '#c4c4dc', marginBottom: 8, lineHeight: 1.5 },
+  promptLine: { fontSize: 14, color: '#a78bfa', fontStyle: 'italic', marginBottom: 20, lineHeight: 1.5 },
   subtext: { fontSize: 13, color: '#7c7a96', marginBottom: 20 },
   noteInput: {
     width: '100%', background: '#1e1e2e', border: '1px solid #2a2a3e',

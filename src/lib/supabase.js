@@ -16,9 +16,9 @@ export const getAnchors = async () => {
   return data
 }
 
-export const addAnchor = async (label, time, color = '#a78bfa') => {
+export const addAnchor = async (label, time, color = '#a78bfa', note = null) => {
   const { data, error } = await supabase
-    .from('anchors').insert({ user_id: UID, label, time, color }).select().single()
+    .from('anchors').insert({ user_id: UID, label, time, color, note }).select().single()
   if (error) throw error
   return data
 }
@@ -30,6 +30,28 @@ export const updateAnchor = async (id, changes) => {
 
 export const deleteAnchor = async (id) => {
   const { error } = await supabase.from('anchors').update({ active: false }).eq('id', id)
+  if (error) throw error
+}
+
+// ── Seed Biological Defaults ───────────────────────────────────────────────────
+const BIOLOGICAL_DEFAULTS = [
+  { label: 'Rise',   time: '09:00', color: '#fbbf24', note: 'Cortisol peak — light start' },
+  { label: 'Peak',   time: '10:30', color: '#34d399', note: 'Alertness highest — deep work' },
+  { label: 'Midday', time: '13:00', color: '#60a5fa', note: 'Coordination — admin & replies' },
+  { label: 'Move',   time: '17:00', color: '#f472b6', note: 'Physical peak — body first' },
+  { label: 'Wind',   time: '20:30', color: '#a78bfa', note: 'Closing loops — surface tomorrow' },
+  { label: 'Dark',   time: '21:30', color: '#7c7a96', note: 'Melatonin active — screens down' },
+]
+
+export const seedDefaultAnchors = async () => {
+  const { count, error: countErr } = await supabase
+    .from('anchors').select('*', { count: 'exact', head: true })
+    .eq('user_id', UID).eq('active', true)
+  if (countErr) throw countErr
+  if (count > 0) return // already has anchors — don't seed
+
+  const rows = BIOLOGICAL_DEFAULTS.map(a => ({ user_id: UID, ...a }))
+  const { error } = await supabase.from('anchors').insert(rows)
   if (error) throw error
 }
 
