@@ -3,13 +3,16 @@ import DayArc from './components/DayArc'
 import Shelf from './components/Shelf'
 import AnchorEditor from './components/AnchorEditor'
 import KinetoraModal from './components/KinetoraModal'
+import Auth from './components/Auth'
 import { useCheckin } from './hooks/useCheckin'
-import { getShelfItems, saveSettings, seedDefaultAnchors } from './lib/supabase'
+import { getShelfItems, saveSettings, seedDefaultAnchors, supabase } from './lib/supabase'
 
 const TABS = ['today', 'anchors', 'log']
 
 // ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('today')
   const [shelfItems, setShelfItems] = useState([])
   const [notifGranted, setNotifGranted] = useState(Notification.permission === 'granted')
@@ -27,17 +30,49 @@ export default function App() {
     setShelfItems(items || [])
   }
 
-  useEffect(() => { loadShelf() }, [])
+  // Auth session management
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => { if (session) loadShelf() }, [session])
 
   // Seed biological anchors on first use
   useEffect(() => {
-    seedDefaultAnchors().then(() => refreshAnchors()).catch(() => {})
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (session) {
+      seedDefaultAnchors().then(() => refreshAnchors()).catch(() => {})
+    }
+  }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notification permission prompt
   const requestNotifs = async () => {
     const result = await Notification.requestPermission()
     setNotifGranted(result === 'granted')
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#7c7a96' }}>loading...</span>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Auth />
   }
 
   return (
@@ -48,8 +83,11 @@ export default function App() {
           <span style={s.logo}>⬡</span>
           <span style={s.appName}>Ancoralis</span>
         </div>
-        <div style={s.clockPill}>
-          <LiveClock />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={s.clockPill}>
+            <LiveClock />
+          </div>
+          <button onClick={handleSignOut} style={s.signOutBtn}>sign out</button>
         </div>
       </div>
 
@@ -258,6 +296,7 @@ const s = {
   boundaryLabel: { fontSize: 12, color: '#4c4c6d' },
   timeInput: { background: '#1e1e2e', border: '1px solid #2a2a3e', borderRadius: 6, color: '#e2e2f0', padding: '6px 10px', fontSize: 13 },
   saveBtn: { padding: '6px 14px', borderRadius: 6, background: '#7c3aed', color: '#fff', border: 'none', fontSize: 13, cursor: 'pointer' },
+  signOutBtn: { background: 'none', border: 'none', color: '#4c4c6d', fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
   loading: { color: '#3d3d55', padding: 20, fontSize: 13 },
   empty: { color: '#3d3d55', fontSize: 13, fontStyle: 'italic', padding: 20 },
   logEntry: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #1e1e2e' },
