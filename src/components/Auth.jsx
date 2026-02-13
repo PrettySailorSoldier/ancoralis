@@ -174,15 +174,15 @@ export default function Auth() {
               fontSize: '0.875rem',
               marginBottom: '1.5rem'
             }}>
-              Enter the 6-digit code sent to <strong style={{ color: 'white' }}>{email}</strong>
+              Enter the 8-digit code sent to <strong style={{ color: 'white' }}>{email}</strong>
             </p>
             <form onSubmit={handleVerifyCode} style={{ width: '100%' }}>
               <input
                 type="text"
-                placeholder="000000"
+                placeholder="00000000"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                maxLength={8}
                 inputMode="numeric"
                 required
                 disabled={loading}
@@ -214,7 +214,7 @@ export default function Auth() {
               )}
               <button
                 type="submit"
-                disabled={loading || code.length !== 6}
+                disabled={loading || code.length !== 8}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -224,8 +224,8 @@ export default function Auth() {
                   color: 'white',
                   fontSize: '1rem',
                   fontWeight: '500',
-                  cursor: (loading || code.length !== 6) ? 'not-allowed' : 'pointer',
-                  opacity: (loading || code.length !== 6) ? 0.6 : 1,
+                  cursor: (loading || code.length !== 8) ? 'not-allowed' : 'pointer',
+                  opacity: (loading || code.length !== 8) ? 0.6 : 1,
                   transition: 'opacity 0.2s',
                   marginBottom: '1rem'
                 }}
