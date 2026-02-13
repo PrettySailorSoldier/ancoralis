@@ -11,8 +11,7 @@ const TABS = ['today', 'anchors', 'log']
 
 // ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState(undefined) // undefined = checking, null = no session, object = logged in
   const [tab, setTab] = useState('today')
   const [shelfItems, setShelfItems] = useState([])
   const [notifGranted, setNotifGranted] = useState(Notification.permission === 'granted')
@@ -32,14 +31,17 @@ export default function App() {
 
   // Auth session management
   useEffect(() => {
+    // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    // Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
 
     return () => subscription.unsubscribe()
   }, [])
@@ -63,18 +65,17 @@ export default function App() {
     await supabase.auth.signOut()
   }
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#7c7a96' }}>loading...</span>
-      </div>
-    )
+  // Still checking for session - show blank dark screen
+  if (session === undefined) {
+    return <div style={{ minHeight: '100vh', background: '#0a0a0f' }} />
   }
 
-  if (!session) {
+  // No session - show auth screen
+  if (session === null) {
     return <Auth />
   }
 
+  // Logged in - show app
   return (
     <div style={s.root}>
       {/* Header */}
@@ -83,11 +84,8 @@ export default function App() {
           <span style={s.logo}>⬡</span>
           <span style={s.appName}>Ancoralis</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={s.clockPill}>
-            <LiveClock />
-          </div>
-          <button onClick={handleSignOut} style={s.signOutBtn}>sign out</button>
+        <div style={s.clockPill}>
+          <LiveClock />
         </div>
       </div>
 
@@ -129,7 +127,7 @@ export default function App() {
 
         {tab === 'log' && (
           <section style={s.section}>
-            <CheckinLog />
+            <CheckinLog onSignOut={handleSignOut} />
           </section>
         )}
       </div>
@@ -206,7 +204,7 @@ function DayBoundaryEditor({ settings, onSave }) {
 // ── CheckinLog ─────────────────────────────────────────────────────────────────
 import { getCheckinLog } from './lib/supabase'
 
-function CheckinLog() {
+function CheckinLog({ onSignOut }) {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -215,7 +213,6 @@ function CheckinLog() {
   }, [])
 
   if (loading) return <div style={s.loading}>loading…</div>
-  if (!entries.length) return <div style={s.empty}>no check-ins yet</div>
 
   const responseColor = { intentional: '#34d399', redirect: '#a78bfa', dismissed: '#4c4c6d' }
   const responseLabel = { intentional: 'on purpose', redirect: 'redirected', dismissed: 'dismissed' }
@@ -223,26 +220,31 @@ function CheckinLog() {
   return (
     <div>
       <div style={{ fontSize: 16, fontWeight: 700, color: '#e2e2f0', marginBottom: 16 }}>Check-in log</div>
-      {entries.map(e => (
-        <div key={e.id} style={s.logEntry}>
-          <div style={s.logLeft}>
-            <span style={{ ...s.logResponse, color: responseColor[e.response] }}>
-              {responseLabel[e.response]}
-            </span>
-            {e.anchors?.label && (
-              <span style={{ ...s.logAnchor, color: e.anchors.color }}>
-                {e.anchors.label}
+      {!entries.length ? (
+        <div style={s.empty}>no check-ins yet</div>
+      ) : (
+        entries.map(e => (
+          <div key={e.id} style={s.logEntry}>
+            <div style={s.logLeft}>
+              <span style={{ ...s.logResponse, color: responseColor[e.response] }}>
+                {responseLabel[e.response]}
               </span>
-            )}
-            {e.note && <span style={s.logNote}>"{e.note}"</span>}
+              {e.anchors?.label && (
+                <span style={{ ...s.logAnchor, color: e.anchors.color }}>
+                  {e.anchors.label}
+                </span>
+              )}
+              {e.note && <span style={s.logNote}>"{e.note}"</span>}
+            </div>
+            <span style={s.logTime}>
+              {new Date(e.fired_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {' '}
+              {new Date(e.fired_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+            </span>
           </div>
-          <span style={s.logTime}>
-            {new Date(e.fired_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            {' '}
-            {new Date(e.fired_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-          </span>
-        </div>
-      ))}
+        ))
+      )}
+      <button onClick={onSignOut} style={s.signOutBtn}>sign out</button>
     </div>
   )
 }
@@ -296,7 +298,7 @@ const s = {
   boundaryLabel: { fontSize: 12, color: '#4c4c6d' },
   timeInput: { background: '#1e1e2e', border: '1px solid #2a2a3e', borderRadius: 6, color: '#e2e2f0', padding: '6px 10px', fontSize: 13 },
   saveBtn: { padding: '6px 14px', borderRadius: 6, background: '#7c3aed', color: '#fff', border: 'none', fontSize: 13, cursor: 'pointer' },
-  signOutBtn: { background: 'none', border: 'none', color: '#4c4c6d', fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
+  signOutBtn: { marginTop: 24, background: 'none', border: 'none', color: '#4c4c6d', fontSize: 11, cursor: 'pointer', padding: '8px 0', textDecoration: 'underline' },
   loading: { color: '#3d3d55', padding: 20, fontSize: 13 },
   empty: { color: '#3d3d55', fontSize: 13, fontStyle: 'italic', padding: 20 },
   logEntry: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #1e1e2e' },
